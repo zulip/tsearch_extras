@@ -11,23 +11,27 @@ PG_MODULE_MAGIC;
 
 
 typedef struct {
-	int4 pos;
-	int4 len;
-	int4 global_pos;
+	int4 cur_word;
+	int4 num_words;
+	int4 char_offset;
 	HeadlineWordEntry* words;
 } TsMatchesData;
+
+typedef struct {
+	int4 offset;
+	int4 len;
+} TsMatchLocation;
 
 PG_FUNCTION_INFO_V1(ts_matches);
 Datum ts_matches(PG_FUNCTION_ARGS);
 
 static void
-ts_matches_setup(FuncCallContext *funcctx, text* in, TSQuery query)
+ts_matches_setup(TsMatchesData *mdata, text* in, TSQuery query)
 {
 	Oid cfgId;
 	HeadlineParsedText prs;
 	TSConfigCacheEntry *cfg;
 	TSParserCacheEntry *prsobj;
-	TsMatchesData *mdata;
 
 	cfgId = getTSCurrentConfig(true);
 	cfg = lookup_ts_config_cache(cfgId);
@@ -44,13 +48,32 @@ ts_matches_setup(FuncCallContext *funcctx, text* in, TSQuery query)
 				  PointerGetDatum(NIL),
 				  PointerGetDatum(query));
 
-	mdata = (TsMatchesData *) palloc(sizeof(TsMatchesData));
-	mdata->pos = 0;
-	mdata->global_pos = 0;
-	mdata->len = prs.curwords;
+	mdata->cur_word = 0;
+	mdata->char_offset = 0;
+	mdata->num_words = prs.curwords;
 	mdata->words = prs.words;
+}
 
-	funcctx->user_fctx = (void *) mdata;
+static bool
+ts_matches_next_match(TsMatchesData *mdata, TsMatchLocation *match)
+{
+	while (mdata->cur_word < mdata->num_words)
+	{
+		HeadlineWordEntry* word = mdata->words + mdata->cur_word;
+		int offset = mdata->char_offset;
+
+		mdata->char_offset += word->len;
+		mdata->cur_word++;
+
+		if (word->selected)
+		{
+			match->offset = offset;
+			match->len = word->len;
+			return true;
+		}
+	}
+
+	return false;
 }
 
 Datum
@@ -59,6 +82,7 @@ ts_matches(PG_FUNCTION_ARGS)
 	FuncCallContext *funcctx;
 	TupleDesc tupdesc;
 	TsMatchesData *mdata;
+	TsMatchLocation match;
 	MemoryContext oldcontext;
 
 	if (SRF_IS_FIRSTCALL())
@@ -69,7 +93,9 @@ ts_matches(PG_FUNCTION_ARGS)
 		funcctx = SRF_FIRSTCALL_INIT();
 
 		oldcontext = MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
-		ts_matches_setup(funcctx, in, query);
+		mdata = (TsMatchesData *) palloc(sizeof(TsMatchesData));
+		ts_matches_setup(mdata, in, query);
+		funcctx->user_fctx = mdata;
 
 		if (get_call_result_type(fcinfo, NULL, &tupdesc) != TYPEFUNC_COMPOSITE)
             ereport(ERROR,
@@ -84,38 +110,17 @@ ts_matches(PG_FUNCTION_ARGS)
 	funcctx = SRF_PERCALL_SETUP();
 
 	mdata = (TsMatchesData *) funcctx->user_fctx;
-
-	while (mdata->pos < mdata->len)
-	{
-		HeadlineWordEntry* word = mdata->words + mdata->pos;
+	if (ts_matches_next_match(mdata, &match)) {
 		HeapTuple return_tuple;
-		int current_pos = mdata->global_pos;
-		char wordbuf[30];
+		Datum *values = (Datum *) palloc(sizeof(Datum) * 2);
+		bool *nulls = (bool *) palloc(sizeof(bool) * 2);
+		nulls[0] = false;
+		nulls[1] = false;
+		values[0] = Int32GetDatum(match.offset);
+		values[1] = Int32GetDatum(match.len);
+		return_tuple = heap_form_tuple(funcctx->tuple_desc, values, nulls);
 
-		mdata->global_pos += word->len;
-		mdata->pos++;
-
-		memcpy(wordbuf, word->word, word->len);
-		wordbuf[word->len] = 0;
-		ereport(NOTICE,
-				(errcode(ERRCODE_SUCCESSFUL_COMPLETION),
-				 errmsg("'%s' %d %d", wordbuf, current_pos, word->len)));
-
-		if (word->selected)
-		{
-			Datum *values = (Datum *) palloc(sizeof(Datum) * 2);
-			bool *nulls = (bool *) palloc(sizeof(bool) * 2);
-			nulls[0] = false;
-			nulls[1] = false;
-			values[0] = Int32GetDatum(current_pos);
-			values[1] = Int32GetDatum(word->len);
-			return_tuple = heap_form_tuple(funcctx->tuple_desc, values, nulls);
-			ereport(NOTICE,
-					(errcode(ERRCODE_SUCCESSFUL_COMPLETION),
-					 errmsg("selected word: %s", wordbuf)));
-
-			SRF_RETURN_NEXT(funcctx, HeapTupleGetDatum(return_tuple));
-		}
+		SRF_RETURN_NEXT(funcctx, HeapTupleGetDatum(return_tuple));
 	}
 
 	SRF_RETURN_DONE(funcctx);
