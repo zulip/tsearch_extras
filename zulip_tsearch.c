@@ -25,19 +25,22 @@ typedef struct {
 } TsMatchLocation;
 
 PG_FUNCTION_INFO_V1(ts_match_locs);
+PG_FUNCTION_INFO_V1(ts_match_locs_byid);
 PG_FUNCTION_INFO_V1(ts_match_locs_array);
+PG_FUNCTION_INFO_V1(ts_match_locs_array_byid);
+
 Datum ts_match_locs(PG_FUNCTION_ARGS);
+Datum ts_match_locs_byid(PG_FUNCTION_ARGS);
 Datum ts_match_locs_array(PG_FUNCTION_ARGS);
+Datum ts_match_locs_array_byid(PG_FUNCTION_ARGS);
 
 static void
-ts_match_locs_setup(TsMatchesData *mdata, text* in, TSQuery query)
+ts_match_locs_setup(Oid cfgId, TsMatchesData *mdata, text* in, TSQuery query)
 {
-	Oid cfgId;
 	HeadlineParsedText prs;
 	TSConfigCacheEntry *cfg;
 	TSParserCacheEntry *prsobj;
 
-	cfgId = getTSCurrentConfig(true);
 	cfg = lookup_ts_config_cache(cfgId);
 	prsobj = lookup_ts_parser_cache(cfg->prsId);
 
@@ -81,7 +84,7 @@ ts_match_locs_next_match(TsMatchesData *mdata, TsMatchLocation *match)
 }
 
 Datum
-ts_match_locs(PG_FUNCTION_ARGS)
+ts_match_locs_byid(PG_FUNCTION_ARGS)
 {
 	FuncCallContext *funcctx;
 	TupleDesc tupdesc;
@@ -91,6 +94,7 @@ ts_match_locs(PG_FUNCTION_ARGS)
 
 	if (SRF_IS_FIRSTCALL())
     {
+		Oid cfgId = PG_GETARG_OID(0);
 		text *in = PG_GETARG_TEXT_P(0);
 		TSQuery query = PG_GETARG_TSQUERY(1);
 
@@ -98,7 +102,7 @@ ts_match_locs(PG_FUNCTION_ARGS)
 
 		oldcontext = MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
 		mdata = (TsMatchesData *) palloc(sizeof(TsMatchesData));
-		ts_match_locs_setup(mdata, in, query);
+		ts_match_locs_setup(cfgId, mdata, in, query);
 		funcctx->user_fctx = mdata;
 
 		if (get_call_result_type(fcinfo, NULL, &tupdesc) != TYPEFUNC_COMPOSITE)
@@ -131,12 +135,27 @@ ts_match_locs(PG_FUNCTION_ARGS)
 }
 
 Datum
-ts_match_locs_array(PG_FUNCTION_ARGS)
+ts_match_locs(PG_FUNCTION_ARGS)
+{
+	Oid cfgId;
+	text *in = PG_GETARG_TEXT_P(0);
+	TSQuery query = PG_GETARG_TSQUERY(1);
+
+	cfgId = getTSCurrentConfig(true);
+	PG_RETURN_DATUM(DirectFunctionCall3(ts_match_locs_byid,
+										ObjectIdGetDatum(cfgId),
+										PointerGetDatum(in),
+										TSQueryGetDatum(query)));
+}
+
+Datum
+ts_match_locs_array_byid(PG_FUNCTION_ARGS)
 {
 	TsMatchesData mdata;
 	TsMatchLocation match;
-	text *in = PG_GETARG_TEXT_P(0);
-	TSQuery query = PG_GETARG_TSQUERY(1);
+	Oid cfgId = PG_GETARG_OID(0);
+	text *in = PG_GETARG_TEXT_P(1);
+	TSQuery query = PG_GETARG_TSQUERY(2);
 	ArrayType *result;
 	Datum *elems;
 	int num_matches_allocd = 6; /* a random guess */
@@ -146,7 +165,7 @@ ts_match_locs_array(PG_FUNCTION_ARGS)
 
 	elems = palloc(sizeof(Datum) * 2 * num_matches_allocd);
 
-	ts_match_locs_setup(&mdata, in, query);
+	ts_match_locs_setup(cfgId, &mdata, in, query);
 
 	while (ts_match_locs_next_match(&mdata, &match))
 	{
@@ -169,4 +188,18 @@ ts_match_locs_array(PG_FUNCTION_ARGS)
 	pfree(elems);
 
 	PG_RETURN_POINTER(result);
+}
+
+Datum
+ts_match_locs_array(PG_FUNCTION_ARGS)
+{
+	Oid cfgId;
+	text *in = PG_GETARG_TEXT_P(0);
+	TSQuery query = PG_GETARG_TSQUERY(1);
+
+	cfgId = getTSCurrentConfig(true);
+	PG_RETURN_DATUM(DirectFunctionCall3(ts_match_locs_array_byid,
+										ObjectIdGetDatum(cfgId),
+										PointerGetDatum(in),
+										TSQueryGetDatum(query)));
 }
