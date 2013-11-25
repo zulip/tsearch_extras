@@ -22,11 +22,11 @@ typedef struct {
 	int4 len;
 } TsMatchLocation;
 
-PG_FUNCTION_INFO_V1(ts_matches);
-Datum ts_matches(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(ts_match_locs);
+Datum ts_match_locs(PG_FUNCTION_ARGS);
 
 static void
-ts_matches_setup(TsMatchesData *mdata, text* in, TSQuery query)
+ts_match_locs_setup(TsMatchesData *mdata, text* in, TSQuery query)
 {
 	Oid cfgId;
 	HeadlineParsedText prs;
@@ -55,7 +55,7 @@ ts_matches_setup(TsMatchesData *mdata, text* in, TSQuery query)
 }
 
 static bool
-ts_matches_next_match(TsMatchesData *mdata, TsMatchLocation *match)
+ts_match_locs_next_match(TsMatchesData *mdata, TsMatchLocation *match)
 {
 	while (mdata->cur_word < mdata->num_words)
 	{
@@ -77,7 +77,7 @@ ts_matches_next_match(TsMatchesData *mdata, TsMatchLocation *match)
 }
 
 Datum
-ts_matches(PG_FUNCTION_ARGS)
+ts_match_locs(PG_FUNCTION_ARGS)
 {
 	FuncCallContext *funcctx;
 	TupleDesc tupdesc;
@@ -94,7 +94,7 @@ ts_matches(PG_FUNCTION_ARGS)
 
 		oldcontext = MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
 		mdata = (TsMatchesData *) palloc(sizeof(TsMatchesData));
-		ts_matches_setup(mdata, in, query);
+		ts_match_locs_setup(mdata, in, query);
 		funcctx->user_fctx = mdata;
 
 		if (get_call_result_type(fcinfo, NULL, &tupdesc) != TYPEFUNC_COMPOSITE)
@@ -110,7 +110,7 @@ ts_matches(PG_FUNCTION_ARGS)
 	funcctx = SRF_PERCALL_SETUP();
 
 	mdata = (TsMatchesData *) funcctx->user_fctx;
-	if (ts_matches_next_match(mdata, &match)) {
+	if (ts_match_locs_next_match(mdata, &match)) {
 		HeapTuple return_tuple;
 		Datum *values = (Datum *) palloc(sizeof(Datum) * 2);
 		bool *nulls = (bool *) palloc(sizeof(bool) * 2);
