@@ -2,10 +2,12 @@
 
 #include "fmgr.h"
 #include "funcapi.h"
+#include "catalog/pg_type.h"
 #include "tsearch/ts_utils.h"
 #include "tsearch/ts_public.h"
 #include "tsearch/ts_cache.h"
 #include "utils/elog.h"
+#include "utils/array.h"
 
 PG_MODULE_MAGIC;
 
@@ -23,7 +25,9 @@ typedef struct {
 } TsMatchLocation;
 
 PG_FUNCTION_INFO_V1(ts_match_locs);
+PG_FUNCTION_INFO_V1(ts_match_locs_array);
 Datum ts_match_locs(PG_FUNCTION_ARGS);
+Datum ts_match_locs_array(PG_FUNCTION_ARGS);
 
 static void
 ts_match_locs_setup(TsMatchesData *mdata, text* in, TSQuery query)
@@ -124,4 +128,45 @@ ts_match_locs(PG_FUNCTION_ARGS)
 	}
 
 	SRF_RETURN_DONE(funcctx);
+}
+
+Datum
+ts_match_locs_array(PG_FUNCTION_ARGS)
+{
+	TsMatchesData mdata;
+	TsMatchLocation match;
+	text *in = PG_GETARG_TEXT_P(0);
+	TSQuery query = PG_GETARG_TSQUERY(1);
+	ArrayType *result;
+	Datum *elems;
+	int num_matches_allocd = 6; /* a random guess */
+	int num_matches = 0;
+	int result_dims[2];
+	int result_lbs[2];
+
+	elems = palloc(sizeof(Datum) * 2 * num_matches_allocd);
+
+	ts_match_locs_setup(&mdata, in, query);
+
+	while (ts_match_locs_next_match(&mdata, &match))
+	{
+		if (num_matches >= num_matches_allocd) {
+			num_matches_allocd *= 1.5;
+			elems = repalloc(elems, sizeof(Datum) * 2 * num_matches_allocd);
+		}
+		elems[num_matches * 2] = Int32GetDatum(match.offset);
+		elems[num_matches * 2 + 1] = Int32GetDatum(match.len);
+
+		++num_matches;
+	}
+
+	result_dims[0] = num_matches;
+	result_dims[1] = 2;
+	result_lbs[0] = 1;
+	result_lbs[1] = 1;
+	result = construct_md_array(elems, NULL, 2, result_dims, result_lbs, INT4OID,
+								sizeof(int4), true, 'i');
+	pfree(elems);
+
+	PG_RETURN_POINTER(result);
 }
