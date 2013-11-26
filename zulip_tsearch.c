@@ -69,14 +69,17 @@ ts_match_locs_next_match(TsMatchesData *mdata, TsMatchLocation *match)
 		HeadlineWordEntry* word = mdata->words + mdata->cur_word;
 		int offset = mdata->char_offset;
 
-		mdata->char_offset += word->len;
 		mdata->cur_word++;
-
-		if (word->selected)
+		if (! word->skip)
 		{
-			match->offset = offset;
-			match->len = word->len;
-			return true;
+			mdata->char_offset += word->len;
+
+			if (word->selected)
+			{
+				match->offset = offset;
+				match->len = word->len;
+				return true;
+			}
 		}
 	}
 
