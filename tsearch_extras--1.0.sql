@@ -1,5 +1,5 @@
 -- complain if script is sourced in psql, rather than via CREATE EXTENSION
-\echo Use "CREATE EXTENSION zulip_tsearch" to load this file. \quit
+\echo Use "CREATE EXTENSION tsearch_extras" to load this file. \quit
 
 CREATE FUNCTION ts_match_locs(regconfig, text, tsquery)
 	RETURNS SETOF RECORD
