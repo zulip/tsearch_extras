@@ -96,7 +96,7 @@ ts_match_locs_byid(PG_FUNCTION_ARGS)
 	MemoryContext oldcontext;
 
 	if (SRF_IS_FIRSTCALL())
-    {
+	{
 		Oid cfgId = PG_GETARG_OID(0);
 		text *in = PG_GETARG_TEXT_P(0);
 		TSQuery query = PG_GETARG_TSQUERY(1);
@@ -109,13 +109,13 @@ ts_match_locs_byid(PG_FUNCTION_ARGS)
 		funcctx->user_fctx = mdata;
 
 		if (get_call_result_type(fcinfo, NULL, &tupdesc) != TYPEFUNC_COMPOSITE)
-            ereport(ERROR,
-                    (errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-                     errmsg("function returning record called in context "
-                            "that cannot accept type record")));
+			ereport(ERROR,
+					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+					 errmsg("function returning record called in context "
+							"that cannot accept type record")));
 		funcctx->tuple_desc = BlessTupleDesc(tupdesc);
 
-        MemoryContextSwitchTo(oldcontext);
+		MemoryContextSwitchTo(oldcontext);
 	}
 
 	funcctx = SRF_PERCALL_SETUP();
