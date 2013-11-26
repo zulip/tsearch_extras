@@ -123,8 +123,8 @@ ts_match_locs_byid(PG_FUNCTION_ARGS)
 	mdata = (TsMatchesData *) funcctx->user_fctx;
 	if (ts_match_locs_next_match(mdata, &match)) {
 		HeapTuple return_tuple;
-		Datum *values = (Datum *) palloc(sizeof(Datum) * 2);
-		bool *nulls = (bool *) palloc(sizeof(bool) * 2);
+		Datum values[2];
+		bool nulls[2];
 		nulls[0] = false;
 		nulls[1] = false;
 		values[0] = Int32GetDatum(match.offset);
@@ -133,6 +133,9 @@ ts_match_locs_byid(PG_FUNCTION_ARGS)
 
 		SRF_RETURN_NEXT(funcctx, HeapTupleGetDatum(return_tuple));
 	}
+
+	pfree(mdata->words);
+	pfree(mdata);
 
 	SRF_RETURN_DONE(funcctx);
 }
