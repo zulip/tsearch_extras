@@ -8,6 +8,7 @@
 #include "tsearch/ts_cache.h"
 #include "utils/elog.h"
 #include "utils/array.h"
+#include "utils/builtins.h"
 
 PG_MODULE_MAGIC;
 
@@ -28,11 +29,13 @@ PG_FUNCTION_INFO_V1(ts_match_locs);
 PG_FUNCTION_INFO_V1(ts_match_locs_byid);
 PG_FUNCTION_INFO_V1(ts_match_locs_array);
 PG_FUNCTION_INFO_V1(ts_match_locs_array_byid);
+PG_FUNCTION_INFO_V1(tsvector_lexemes);
 
 Datum ts_match_locs(PG_FUNCTION_ARGS);
 Datum ts_match_locs_byid(PG_FUNCTION_ARGS);
 Datum ts_match_locs_array(PG_FUNCTION_ARGS);
 Datum ts_match_locs_array_byid(PG_FUNCTION_ARGS);
+Datum tsvector_lexemes(PG_FUNCTION_ARGS);
 
 static void
 ts_match_locs_setup(Oid cfgId, TsMatchesData *mdata, text* in, TSQuery query)
@@ -208,4 +211,30 @@ ts_match_locs_array(PG_FUNCTION_ARGS)
 										ObjectIdGetDatum(cfgId),
 										PointerGetDatum(in),
 										TSQueryGetDatum(query)));
+}
+
+Datum
+tsvector_lexemes(PG_FUNCTION_ARGS)
+{
+	TSVector tsvec = PG_GETARG_TSVECTOR(0);
+	Datum *elems;
+	ArrayType *ret;
+	int i;
+
+	elems = palloc(sizeof(Datum) * tsvec->size);
+	for (i = 0; i < tsvec->size; ++i)
+	{
+		WordEntry entry = tsvec->entries[i];
+		char *lexeme = STRPTR(tsvec) + entry.pos;
+		elems[i] = PointerGetDatum(cstring_to_text_with_len(lexeme, entry.len));
+	}
+
+	ret = construct_array(elems, tsvec->size, TEXTOID, -1, false, 'i');
+
+	for (i = 0; i < tsvec->size; ++i)
+	{
+		pfree(DatumGetTextP(elems[i]));
+	}
+	pfree(elems);
+	PG_RETURN_POINTER(ret);
 }

@@ -20,3 +20,8 @@ CREATE FUNCTION ts_match_locs_array(text, tsquery)
 	RETURNS integer[][2]
         as 'MODULE_PATHNAME', 'ts_match_locs_array'
         LANGUAGE C STRICT;
+
+CREATE FUNCTION tsvector_lexemes(tsvector)
+	RETURNS text[]
+        as 'MODULE_PATHNAME', 'tsvector_lexemes'
+        LANGUAGE C STRICT;
