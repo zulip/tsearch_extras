@@ -1,0 +1,16 @@
+Source: tsearch-extras
+Section: misc
+Priority: extra
+Maintainer: Zulip Debian Packaging Team <debian@zulip.com>
+Uploaders: Zev Benjamin <zev@zulip.com>, Luke Faraone <lfaraone@zulip.com>
+Build-Depends: debhelper (>= 5.0.0), postgresql-server-dev-all (>= 122~)
+Standards-Version: 3.9.4
+
+Package: postgresql-PGVERSION-tsearch-extras
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Recommends: postgresql-PGVERSION
+Description: additional full text search functions for PostgreSQL PGVERSION
+ This PostgreSQL extenion provides several additional functions for
+ full text search, including functions to query the location of matches
+ within strings.
