@@ -1,12 +1,12 @@
 -- complain if script is sourced in psql, rather than via CREATE EXTENSION
 \echo Use "CREATE EXTENSION tsearch_extras" to load this file. \quit
 
-CREATE FUNCTION ts_match_locs(regconfig, text, tsquery)
+CREATE FUNCTION ts_match_locs(IN regconfig, IN text, IN tsquery, OUT "offset" int4, OUT "len" int4)
 	RETURNS SETOF RECORD
         as 'MODULE_PATHNAME', 'ts_match_locs_byid'
         LANGUAGE C STRICT;
 
-CREATE FUNCTION ts_match_locs(text, tsquery)
+CREATE FUNCTION ts_match_locs(IN text, IN tsquery, OUT "offset" int4, OUT "len" int4)
 	RETURNS SETOF RECORD
         as 'MODULE_PATHNAME', 'ts_match_locs'
         LANGUAGE C STRICT;
