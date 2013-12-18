@@ -126,8 +126,8 @@ ts_match_locs_byid(PG_FUNCTION_ARGS)
 	if (SRF_IS_FIRSTCALL())
 	{
 		Oid cfgId = PG_GETARG_OID(0);
-		text *in = PG_GETARG_TEXT_P(0);
-		TSQuery query = PG_GETARG_TSQUERY(1);
+		text *in = PG_GETARG_TEXT_P(1);
+		TSQuery query = PG_GETARG_TSQUERY(2);
 
 		funcctx = SRF_FIRSTCALL_INIT();
 
