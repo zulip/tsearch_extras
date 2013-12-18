@@ -50,14 +50,10 @@ typedef struct {
 	int4 len;
 } TsMatchLocation;
 
-PG_FUNCTION_INFO_V1(ts_match_locs);
-PG_FUNCTION_INFO_V1(ts_match_locs_byid);
 PG_FUNCTION_INFO_V1(ts_match_locs_array);
 PG_FUNCTION_INFO_V1(ts_match_locs_array_byid);
 PG_FUNCTION_INFO_V1(tsvector_lexemes);
 
-Datum ts_match_locs(PG_FUNCTION_ARGS);
-Datum ts_match_locs_byid(PG_FUNCTION_ARGS);
 Datum ts_match_locs_array(PG_FUNCTION_ARGS);
 Datum ts_match_locs_array_byid(PG_FUNCTION_ARGS);
 Datum tsvector_lexemes(PG_FUNCTION_ARGS);
@@ -112,74 +108,6 @@ ts_match_locs_next_match(TsMatchesData *mdata, TsMatchLocation *match)
 	}
 
 	return false;
-}
-
-Datum
-ts_match_locs_byid(PG_FUNCTION_ARGS)
-{
-	FuncCallContext *funcctx;
-	TupleDesc tupdesc;
-	TsMatchesData *mdata;
-	TsMatchLocation match;
-	MemoryContext oldcontext;
-
-	if (SRF_IS_FIRSTCALL())
-	{
-		Oid cfgId = PG_GETARG_OID(0);
-		text *in = PG_GETARG_TEXT_P(1);
-		TSQuery query = PG_GETARG_TSQUERY(2);
-
-		funcctx = SRF_FIRSTCALL_INIT();
-
-		oldcontext = MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
-		mdata = (TsMatchesData *) palloc(sizeof(TsMatchesData));
-		ts_match_locs_setup(cfgId, mdata, in, query);
-		funcctx->user_fctx = mdata;
-
-		if (get_call_result_type(fcinfo, NULL, &tupdesc) != TYPEFUNC_COMPOSITE)
-			ereport(ERROR,
-					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-					 errmsg("function returning record called in context "
-							"that cannot accept type record")));
-		funcctx->tuple_desc = BlessTupleDesc(tupdesc);
-
-		MemoryContextSwitchTo(oldcontext);
-	}
-
-	funcctx = SRF_PERCALL_SETUP();
-
-	mdata = (TsMatchesData *) funcctx->user_fctx;
-	if (ts_match_locs_next_match(mdata, &match)) {
-		HeapTuple return_tuple;
-		Datum values[2];
-		bool nulls[2];
-		nulls[0] = false;
-		nulls[1] = false;
-		values[0] = Int32GetDatum(match.offset);
-		values[1] = Int32GetDatum(match.len);
-		return_tuple = heap_form_tuple(funcctx->tuple_desc, values, nulls);
-
-		SRF_RETURN_NEXT(funcctx, HeapTupleGetDatum(return_tuple));
-	}
-
-	pfree(mdata->words);
-	pfree(mdata);
-
-	SRF_RETURN_DONE(funcctx);
-}
-
-Datum
-ts_match_locs(PG_FUNCTION_ARGS)
-{
-	Oid cfgId;
-	text *in = PG_GETARG_TEXT_P(0);
-	TSQuery query = PG_GETARG_TSQUERY(1);
-
-	cfgId = getTSCurrentConfig(true);
-	PG_RETURN_DATUM(DirectFunctionCall3(ts_match_locs_byid,
-										ObjectIdGetDatum(cfgId),
-										PointerGetDatum(in),
-										TSQueryGetDatum(query)));
 }
 
 Datum
