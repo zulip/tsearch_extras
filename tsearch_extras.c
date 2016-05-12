@@ -39,15 +39,15 @@ PG_MODULE_MAGIC;
 
 
 typedef struct {
-	int4 cur_word;
-	int4 num_words;
-	int4 char_offset;
+	int32 cur_word;
+	int32 num_words;
+	int32 char_offset;
 	HeadlineWordEntry* words;
 } TsMatchesData;
 
 typedef struct {
-	int4 offset;
-	int4 len;
+	int32 offset;
+	int32 len;
 } TsMatchLocation;
 
 PG_FUNCTION_INFO_V1(ts_match_locs_array);
@@ -146,7 +146,7 @@ ts_match_locs_array_byid(PG_FUNCTION_ARGS)
 	result_lbs[0] = 1;
 	result_lbs[1] = 1;
 	result = construct_md_array(elems, NULL, 2, result_dims, result_lbs, INT4OID,
-								sizeof(int4), true, 'i');
+								sizeof(int32), true, 'i');
 	pfree(elems);
 
 	PG_RETURN_POINTER(result);
