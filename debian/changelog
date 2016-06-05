@@ -1,3 +1,9 @@
+tsearch-extras (0.2) xenial; urgency=low
+
+  * Update for Ubuntu Xenial and postgres 9.5.
+
+ -- Tim Abbott <tabbott@mit.edu>  Tue, 28 Jun 2016 20:49:00 -0800
+
 tsearch-extras (0.1) UNRELEASED; urgency=low
 
   * Initial release

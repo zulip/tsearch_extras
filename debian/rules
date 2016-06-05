@@ -17,12 +17,12 @@ build: build-arch build-indep
 build-arch: build-stamp
 build-indep: build-stamp
 build-stamp:
-	+pg_buildext build $(SRCDIR) build-%v "$(CFLAGS)"
+	pg_buildext build $(SRCDIR) build-%v "$(CFLAGS)"
 
 clean:
 	dh_testdir
 	dh_testroot
-	+pg_buildext clean $(SRCDIR) build-%v
+	pg_buildext clean $(SRCDIR) build-%v
 	dh_clean
 
 install: build
@@ -30,7 +30,7 @@ install: build
 	dh_testroot
 	dh_prep
 	dh_installdirs
-	+pg_buildext install $(SRCDIR) build-%v postgresql-%v-tsearch-extras
+	pg_buildext install $(SRCDIR) build-%v postgresql-%v-tsearch-extras
 
 binary-indep: build install
 binary-arch: build install

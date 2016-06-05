@@ -6,11 +6,11 @@ Uploaders: Zev Benjamin <zev@zulip.com>, Luke Faraone <lfaraone@zulip.com>
 Build-Depends: debhelper (>= 5.0.0), postgresql-server-dev-all (>= 122~)
 Standards-Version: 3.9.4
 
-Package: postgresql-9.1-tsearch-extras
+Package: postgresql-9.5-tsearch-extras
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Recommends: postgresql-9.1
-Description: additional full text search functions for PostgreSQL 9.1
+Recommends: postgresql-9.5
+Description: additional full text search functions for PostgreSQL 9.5
  This PostgreSQL extenion provides several additional functions for
  full text search, including functions to query the location of matches
  within strings.
