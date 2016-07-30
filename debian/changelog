@@ -1,3 +1,9 @@
+tsearch-extras (0.2) trusty; urgency=low
+
+  * Backport to Ubuntu Trusty and postgres 9.3.
+
+ -- Tim Abbott <tabbott@mit.edu>  Sat, 30 Jul 2016 10:05:41 -0700
+
 tsearch-extras (0.2) xenial; urgency=low
 
   * Update for Ubuntu Xenial and postgres 9.5.
