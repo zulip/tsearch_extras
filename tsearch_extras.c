@@ -28,6 +28,8 @@
 #include "fmgr.h"
 #include "funcapi.h"
 #include "catalog/pg_type.h"
+#include "nodes/makefuncs.h"
+#include "nodes/pg_list.h"
 #include "tsearch/ts_utils.h"
 #include "tsearch/ts_public.h"
 #include "tsearch/ts_cache.h"
@@ -64,6 +66,7 @@ ts_match_locs_setup(Oid cfgId, TsMatchesData *mdata, text* in, TSQuery query)
 	HeadlineParsedText prs;
 	TSConfigCacheEntry *cfg;
 	TSParserCacheEntry *prsobj;
+	List *headline_options = NIL;
 
 	cfg = lookup_ts_config_cache(cfgId);
 	prsobj = lookup_ts_parser_cache(cfg->prsId);
@@ -74,9 +77,13 @@ ts_match_locs_setup(Oid cfgId, TsMatchesData *mdata, text* in, TSQuery query)
 
 	hlparsetext(cfgId, &prs, query, VARDATA(in), VARSIZE(in) - VARHDRSZ);
 
+	headline_options = lappend(headline_options,
+											  makeDefElem(pstrdup("HighlightAll"),
+											  (Node *) makeString(pstrdup("1"))));
+
 	FunctionCall3(&(prsobj->prsheadline),
 				  PointerGetDatum(&prs),
-				  PointerGetDatum(NIL),
+				  PointerGetDatum(headline_options),
 				  PointerGetDatum(query));
 
 	mdata->cur_word = 0;
