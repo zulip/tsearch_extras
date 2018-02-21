@@ -1,3 +1,9 @@
+tsearch-extras (0.3) xenial; urgency=medium
+
+  * Fix bug with missing HighlightAll option for proper unicode handling.
+
+ -- Tim Abbott <tabbott@mit.edu>  Wed, 21 Feb 2018 08:46:10 -0800
+
 tsearch-extras (0.2) xenial; urgency=low
 
   * Update for Ubuntu Xenial and postgres 9.5.
