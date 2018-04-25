@@ -101,7 +101,7 @@ ts_match_locs_next_match(TsMatchesData *mdata, TsMatchLocation *match)
 		int offset = mdata->char_offset;
 
 		mdata->cur_word++;
-		if (! word->skip)
+		if (! word->skip && ! word->repeated)
 		{
 			mdata->char_offset += word->len;
 
