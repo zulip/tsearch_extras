@@ -1,3 +1,10 @@
+tsearch-extras (0.4) xenial; urgency=medium
+
+  * Fix bug with repeated word in postgres 9.6.
+  * Add support for building with postgres 10.
+
+ -- Tim Abbott <tabbott@mit.edu>  Wed, 2 May 2018 10:23:08 -0700
+
 tsearch-extras (0.3) xenial; urgency=medium
 
   * Fix bug with missing HighlightAll option for proper unicode handling.
