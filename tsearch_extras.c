@@ -77,9 +77,15 @@ ts_match_locs_setup(Oid cfgId, TsMatchesData *mdata, text* in, TSQuery query)
 
 	hlparsetext(cfgId, &prs, query, VARDATA(in), VARSIZE(in) - VARHDRSZ);
 
+	#if PG_VERSION_NUM >= 100000
+	headline_options = lappend(headline_options,
+											  makeDefElem(pstrdup("HighlightAll"),
+											  (Node *) makeString(pstrdup("1")), -1));
+	#else
 	headline_options = lappend(headline_options,
 											  makeDefElem(pstrdup("HighlightAll"),
 											  (Node *) makeString(pstrdup("1"))));
+	#endif
 
 	FunctionCall3(&(prsobj->prsheadline),
 				  PointerGetDatum(&prs),
