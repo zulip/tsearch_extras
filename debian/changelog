@@ -1,3 +1,9 @@
+tsearch-extras (0.5~ubuntu16.04) xenial; urgency=medium
+
+  * debian/pgversions: List all supported Postgres versions.
+
+ -- Anders Kaseorg <andersk@mit.edu>  Sat, 17 Aug 2019 13:22:49 -0700
+
 tsearch-extras (0.4) xenial; urgency=medium
 
   * Fix bug with repeated word in postgres 9.6.
